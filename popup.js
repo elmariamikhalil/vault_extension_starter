@@ -728,21 +728,82 @@ document.addEventListener("DOMContentLoaded", function () {
   function autofillCredentials(item) {
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       if (tabs && tabs[0] && tabs[0].id) {
+        console.log("Sending autofill message to tab:", tabs[0].id);
+
+        // Check if we can access this tab
+        if (
+          tabs[0].url.startsWith("chrome://") ||
+          tabs[0].url.startsWith("chrome-extension://") ||
+          tabs[0].url.startsWith("about:") ||
+          tabs[0].url.startsWith("edge://") ||
+          tabs[0].url.startsWith("brave://")
+        ) {
+          showNotification(
+            "Cannot access this page due to browser restrictions",
+            "error"
+          );
+          return;
+        }
+
+        // First check if we have a content script running on this tab
         chrome.tabs.sendMessage(
           tabs[0].id,
-          {
-            action: "fillCredentials",
-            username: item.username,
-            password: item.password,
-          },
+          { action: "checkContentScriptActive" },
           function (response) {
-            if (response && response.success) {
-              showNotification("Credentials filled successfully", "success");
+            // If we don't get a response, we need to inject the content script
+            if (chrome.runtime.lastError) {
+              console.log("Content script not ready, injecting now");
+
+              // Inject the content script first
+              chrome.scripting
+                .executeScript({
+                  target: { tabId: tabs[0].id },
+                  files: ["content.js"],
+                })
+                .then(() => {
+                  // Wait a moment for the script to initialize
+                  setTimeout(() => {
+                    // Now send the autofill message
+                    sendAutofillMessage();
+                  }, 300);
+                })
+                .catch((error) => {
+                  console.error("Failed to inject content script:", error);
+                  showNotification(
+                    "Could not access the page. Please try again.",
+                    "error"
+                  );
+                });
             } else {
-              showNotification("Could not find login form on page", "error");
+              // Content script is already active, send the message directly
+              sendAutofillMessage();
             }
           }
         );
+
+        function sendAutofillMessage() {
+          chrome.tabs.sendMessage(
+            tabs[0].id,
+            {
+              action: "fillCredentials",
+              username: item.username,
+              password: item.password,
+            },
+            function (response) {
+              if (chrome.runtime.lastError) {
+                console.error("Error in autofill:", chrome.runtime.lastError);
+                showNotification(
+                  "There was an error filling the credentials",
+                  "error"
+                );
+              } else if (response && response.success) {
+                showNotification("Credentials filled successfully", "success");
+              } else {
+                showNotification("Could not find login form on page", "error");
+              }
+            }
+          );
+        }
       }
     });
   }
