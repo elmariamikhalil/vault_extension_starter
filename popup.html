@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Vault</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div id="app">
+      <div id="login-section">
+        <img src="icons/icon-128.png" alt="Logo" class="logo" />
+        <form id="login-form">
+          <input type="email" name="email" placeholder="Email" required />
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            required
+          />
+          <button type="submit">Login</button>
+        </form>
+      </div>
+
+      <div id="vault" style="display: none">
+        <h3>Your Vault</h3>
+        <div id="vault-list">
+          <div id="add-form">
+            <h4>Add New Password</h4>
+            <input type="text" id="new-site" placeholder="Site" required />
+            <input
+              type="text"
+              id="new-username"
+              placeholder="Username"
+              required
+            />
+            <input
+              type="password"
+              id="new-password"
+              placeholder="Password"
+              required
+            />
+            <button id="add-btn">Add</button>
+          </div>
+        </div>
+        <button id="logout" class="logout-btn">Logout</button>
+      </div>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>
